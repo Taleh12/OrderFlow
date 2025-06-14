@@ -3,6 +3,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderCreated;
+use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,23 +40,11 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
-            'total_price' => 'required|numeric|min:0',
-        ]);
+        $order = Order::create($request->all());
 
-        $user = Auth::user();
+        // Event atılır
+        event(new OrderCreated($order));
 
-        $order = $this->orderService->createOrder([
-            'user_id' => $user->id,
-            'items' => $request->items,
-            'total_price' => $request->total_price,
-            'status' => 'pending',
-        ]);
-
-        return response()->json($order, 201);
+        return response()->json(['order' => $order], 201);
     }
 }
