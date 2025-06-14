@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Repositories\UserRepositoryInterface;
+use App\Repositories\Interfaces\UserRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -27,17 +27,18 @@ class AuthService
 
     public function login(array $credentials)
     {
-        if (Auth::attempt($credentials)) { // Giriş yoxlanılır
-            $user = Auth::user();
-            $token = $user->createToken('auth-token')->plainTextToken;
+        $user = $this->userRepository->findByEmail($credentials['email']);
 
-            return [
-                'user' => $user,
-                'token' => $token,
-            ];
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return null;
         }
 
-        return null; // Giriş uğursuzdursa null qaytarır
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return [
+            'user' => $user,
+            'token' => $token,
+        ];
     }
 
     public function logout()
